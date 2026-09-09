@@ -1,6 +1,7 @@
 """Browser tests for litetheskobro.com. Drives the installed Google Chrome through Playwright.
 
     uv run --with playwright python tests/test_site.py
+    SITE_URL=https://litetheskobro.com uv run --with playwright python tests/test_site.py
 
 Also regenerates og.png from tests/og.html. Screenshots and downloaded cards land in tests/out/.
 """
@@ -17,7 +18,13 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
 srv = socketserver.ThreadingTCPServer(('127.0.0.1', 0), Quiet)
 port = srv.server_address[1]
 threading.Thread(target=srv.serve_forever, daemon=True).start()
-BASE = f'http://127.0.0.1:{port}'
+# SITE_URL=https://litetheskobro.com runs the same suite against the live deployment.
+# CHROME_ARGS can pass e.g. --host-resolver-rules to bypass a stale local DNS cache.
+LIVE = os.environ.get('SITE_URL', '').rstrip('/')
+BASE = LIVE or f'http://127.0.0.1:{port}'
+import shlex
+CHROME_ARGS = shlex.split(os.environ.get('CHROME_ARGS', ''))
+print(f'Testing {BASE}')
 
 results = []
 def check(name, cond, extra=''):
@@ -31,7 +38,7 @@ YELLOW, PINK, BLUE, GREEN = 'rgb(255, 210, 63)', 'rgb(255, 77, 141)', 'rgb(47, 9
 wa_stub = lambda route: route.fulfill(status=200, content_type='text/html', body='<title>wa</title>stub')
 
 with sync_playwright() as p:
-    browser = p.chromium.launch(channel='chrome', headless=True)
+    browser = p.chromium.launch(channel='chrome', headless=True, args=CHROME_ARGS)
 
     # ------------------------------------------------------------ desktop
     ctx = browser.new_context(viewport={'width': 1440, 'height': 900}, permissions=['clipboard-read', 'clipboard-write'], accept_downloads=True)
@@ -152,7 +159,12 @@ with sync_playwright() as p:
     check('mobile: no page errors', not merr, merr[:2])
     mctx.close()
 
-    # ------------------------------------------------------------ og image
+    # ------------------------------------------------------------ og image (local runs only)
+    if LIVE:
+        browser.close(); srv.shutdown()
+        fails = [n for n, ok in results if not ok]
+        print(f'\n{len(results) - len(fails)}/{len(results)} checks passed' + (f'; FAILED: {fails}' if fails else ''))
+        sys.exit(1 if fails else 0)
     og = open(os.path.join(TESTS, 'og.html')).read().replace('__BASE__', BASE); open(f'{OUT}/og.html', 'w').write(og)
     octx = browser.new_context(viewport={'width': 1200, 'height': 630}); o = octx.new_page()
     o.goto('file://' + f'{OUT}/og.html'); o.wait_for_load_state('networkidle'); o.evaluate('document.fonts.ready')
