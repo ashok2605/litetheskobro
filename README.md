@@ -71,28 +71,18 @@ All of these serve a static folder for free with a custom domain and HTTPS.
 
 Neocities is free but charges for custom domains. If the site goes viral, Cloudflare Pages is the one with no bandwidth ceiling; Vercel's Hobby plan forbids commercial use, so move off it before selling merch.
 
-### Option A: GitHub Pages (recommended to start)
+### Option A: GitHub Pages (live now)
 
-1. Push the folder to a new public repo:
+The site is deployed from this repo: https://github.com/ashok2605/litetheskobro. Every push to `main` redeploys in about 30 seconds.
 
-   ```sh
-   cd ~/Desktop/litetheskobro
-   git init -b main
-   git add .
-   git commit -m "Lite thesko bro"
-   gh repo create litetheskobro --public --source=. --push
-   ```
+**The repo must stay public.** GitHub Free only serves Pages from public repos; making it private unpublishes the site (verified on 2026-09-09). To have a private repo, move hosting to Cloudflare Pages or Netlify (Options B and C), both of which deploy from private repos for free.
 
-2. Turn on Pages from the `main` branch root:
 
-   ```sh
-   gh api -X POST repos/ashok2605/litetheskobro/pages \
-     -f "source[branch]=main" -f "source[path]=/"
-   ```
+Setup already done: repo created, Pages enabled from `main` / root, custom domain set to `litetheskobro.com`. What remains is DNS.
 
-   Or in the browser: repo → Settings → Pages → Source: Deploy from a branch → `main` / `/ (root)`.
+1. In Namecheap: Domain List → **Manage** → **Nameservers** → switch to **Namecheap BasicDNS** if the domain is on hosting nameservers (dns1/dns2.namecheaphosting.com). The Advanced DNS tab only appears for BasicDNS or PremiumDNS.
 
-3. In Namecheap: Domain List → **Manage** → **Advanced DNS**. Delete the default parking records (the `URL Redirect` for `@` and the `CNAME` for `www`), then add:
+2. In Namecheap: Domain List → **Manage** → **Advanced DNS**. Delete the default parking records (the `URL Redirect` for `@` and the `CNAME` for `www`), then add:
 
    | Type | Host | Value | TTL |
    |---|---|---|---|
@@ -102,7 +92,7 @@ Neocities is free but charges for custom domains. If the site goes viral, Cloudf
    | A | `@` | `185.199.111.153` | Automatic |
    | CNAME | `www` | `ashok2605.github.io` | Automatic |
 
-4. Back on GitHub: Settings → Pages → **Custom domain** → `litetheskobro.com` → Save. The `CNAME` file in this repo does the same thing, so it may already be filled in. Once the DNS check passes (usually 5 to 30 minutes, up to 48 hours), tick **Enforce HTTPS**.
+3. Back on GitHub: Settings → Pages → **Custom domain** → `litetheskobro.com` → Save. The `CNAME` file in this repo does the same thing, so it may already be filled in. Once the DNS check passes (usually 5 to 30 minutes, up to 48 hours), tick **Enforce HTTPS**.
 
 ### Option B: Cloudflare Pages (best free tier)
 
